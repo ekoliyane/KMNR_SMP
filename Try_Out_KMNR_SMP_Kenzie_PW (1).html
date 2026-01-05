@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Try Out KMNR | Mafia Quiz</title>
+    
+    <style>
+        /* --- RESET & VARIABLES --- */
+        
+    :root {
+        --bg-dark: #0f172a;
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --accent: #d4af37;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --text-main: #ffffff;
+        --text-muted: #94a3b8;
+        --glass-bg: rgba(30, 41, 59, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+  
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        html { height: 100%; }
+        body { background-color: var(--bg-dark); color: var(--text-main); height: 100dvh; width: 100vw; display: flex; flex-direction: column; overflow: hidden; position: fixed; }
+
+        /* --- LAYOUT --- */
+        header { flex: 0 0 60px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--glass-border); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: space-between; padding: 0 1rem; z-index: 40; }
+        main { flex: 1; overflow-y: auto; position: relative; padding: 1rem; display: flex; flex-direction: column; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+        footer { flex: 0 0 auto; background: rgba(15, 23, 42, 0.95); border-top: 1px solid var(--glass-border); backdrop-filter: blur(5px); padding: 0.75rem 1rem; z-index: 40; }
+
+        /* --- COMPONENTS --- */
+        .card-container { width: 100%; max-width: 800px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; }
+        .glass { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); box-shadow: var(--card-shadow); }
+        #questionCard { border-radius: 1rem; padding: 1.25rem; display: flex; flex-direction: column; min-height: auto; flex-grow: 1; animation: fadein 0.3s ease-out; }
+        @keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2#qText { font-size: 1.1rem; line-height: 1.5; margin-bottom: 1rem; font-weight: 600; }
+        @media (min-width: 768px) { h2#qText { font-size: 1.35rem; } }
+        
+        /* Global Image Safety */
+        img { max-width: 100%; height: auto; display: inline-block; }
+        
+        button, a.btn { cursor: pointer; border: none; outline: none; transition: all 0.2s; user-select: none; text-decoration: none; }
+        button:active, a.btn:active { transform: scale(0.98); }
+        
+        .btn { padding: 0.75rem 1rem; border-radius: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 0.9rem; }
+        .btn-primary { background: linear-gradient(to right, var(--primary), var(--accent)); box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3); }
+        .btn-nav { background: #334155; color: white; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-finish { background: var(--success); }
+        .btn-success { background: #25D366; color: white; }
+        .btn-outline { border: 1px solid var(--primary); color: var(--primary); background: transparent; }
+
+        .btn-option { width: 100%; text-align: left; padding: 0.85rem; border-radius: 0.75rem; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--glass-border); color: var(--text-muted); margin-bottom: 0.5rem; display: flex; align-items: center; font-size: 0.9rem; }
+        .btn-option:active, .btn-option:hover { background: rgba(50, 60, 80, 0.8); border-color: var(--primary); color: white; }
+        .btn-option.correct { background: rgba(16, 185, 129, 0.15); border-color: var(--success); color: #a7f3d0; }
+        .btn-option.wrong { background: rgba(239, 68, 68, 0.15); border-color: var(--danger); color: #fca5a5; }
+        .btn-option.missed { border: 1px dashed var(--success); opacity: 0.7; }
+        
+        .option-icon { margin-right:10px; border:1px solid currentColor; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold; flex-shrink: 0; }
+        .btn-option.checkbox .option-icon { border-radius: 4px; } 
+
+        textarea, input, select { width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(139, 92, 246, 0.3); color: white; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.9rem; }
+        .match-row { background: rgba(30, 41, 59, 0.4); padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 0.5rem; border: 1px solid var(--glass-border); }
+        
+        /* Effects */
+        .blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.2; z-index: -1; animation: pulse 6s infinite ease-in-out; }
+        .blob-1 { top: -10%; left: -10%; width: 300px; height: 300px; background: var(--primary); }
+        .blob-2 { bottom: -10%; right: -10%; width: 250px; height: 250px; background: var(--accent); animation-delay: 3s; }
+        @keyframes pulse { 0%, 100% { opacity: 0.15; transform: scale(1); } 50% { opacity: 0.25; transform: scale(1.1); } }
+
+        .confetti { position: fixed; width: 10px; height: 10px; background-color: #f00; animation: fall linear forwards; z-index: 60; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0, 0, 0, 0.9); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; overflow-y: auto; }
+        .modal-content { width: 100%; max-width: 400px; border-radius: 1rem; padding: 1.5rem; border-top: 4px solid var(--primary); margin: auto; }
+
+        .badge { font-size: 0.65rem; padding: 0.2rem 0.6rem; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid; }
+        .badge-pg { background: rgba(59, 130, 246, 0.1); color: #93c5fd; border-color: rgba(59, 130, 246, 0.3); }
+        .badge-complex { background: rgba(236, 72, 153, 0.1); color: #fbcfe8; border-color: rgba(236, 72, 153, 0.3); }
+        .badge-match { background: rgba(20, 184, 166, 0.1); color: #5eead4; border-color: rgba(20, 184, 166, 0.3); }
+        .badge-mix { background: rgba(168, 85, 247, 0.1); color: #d8b4fe; border-color: rgba(168, 85, 247, 0.3); }
+
+        .map-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+        .map-btn { aspect-ratio: 1; background: #334155; border-radius: 0.35rem; color: #94a3b8; font-weight: bold; font-size: 0.8rem; }
+        .map-btn.active { background: var(--primary); color: white; border: 1px solid white; }
+        .map-btn.answered { background: var(--success); color: #064e3b; }
+
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .text-center { text-align: center; }
+
+        .wa-banner { background: linear-gradient(90deg, #064e3b, #065f46); padding: 0.5rem 0.75rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: space-between; color: white; text-decoration: none; border: 1px solid #047857; margin-top: 0.5rem; }
+    </style>
+
+</head>
+<body>
+
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <!-- START MODAL -->
+    <div id="startModal" class="modal-overlay">
+        <div class="glass modal-content">
+            <div class="text-center mb-4">
+                
+                   <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 12px 24px rgba(0,0,0,0.4); transform: rotate(-5deg);">
+                        <span style="color: white; font-weight: 900; font-size: 2rem; transform: rotate(5deg);">MQ</span>
+                   </div>
+                
+            </div>
+            <div style="text-align: center; margin-bottom: 0.5rem;">
+                <span style="background: var(--accent); color: black; padding: 2px 10px; border-radius: 4px; font-weight: 900; font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase;">Mafia Quiz</span>
+            </div>
+            <h1 style="font-size: 1.75rem; font-weight: 900; text-align: center; margin-bottom: 0.25rem; background: -webkit-linear-gradient(0deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.1;">Try Out KMNR</h1>
+            <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 1.5rem; font-weight: 600;">SMP</p>
+            
+            <div style="background: rgba(15,23,42,0.5); padding: 1.25rem; border-radius: 1rem; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 1.5rem; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                <div class="flex justify-between" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.6rem; margin-bottom: 0.6rem;">
+                    <span style="color:var(--text-muted)">Durasi</span> <b style="color: white;">120 Menit</b>
+                </div>
+                <div class="flex justify-between" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.6rem; margin-bottom: 0.6rem;">
+                    <span style="color:var(--text-muted)">Jumlah Soal</span> <b style="color: white;">50 Butir</b>
+                </div>
+                <div class="flex flex-col" style="gap: 4px;">
+                    <span style="color:var(--text-muted); font-size: 0.8rem;">Variasi Soal:</span> <b style="color: var(--accent); font-size: 0.8rem; text-transform: uppercase;">50 PG</b>
+                </div>
+            </div>
+            
+            <button id="btnStartQuiz" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 1rem; border-radius: 1rem;">
+                MULAI SEKARANG
+            </button>
+            <a href="https://wa.me/6285643573687?text=Halo%20Mafia%20Quiz%2C%20saya%20ingin%20memesan%20aplikasi%20kuis%20interaktif%20seperti%20%22Try%20Out%20KMNR%22." target="_blank" rel="noopener noreferrer" class="btn btn-success" style="width: 100%; font-size: 0.9rem; margin-top: 0.75rem; border: 1px solid #4ade80; padding: 0.85rem; border-radius: 1rem;">
+                PESAN KUIS @ MAFIA QUIZ
+            </a>
+            <p style="text-align: center; font-size: 0.65rem; color: var(--text-muted); margin-top: 1.25rem; opacity: 0.6; font-weight: 800; letter-spacing: 1px; white-space: nowrap;">POWERED BY MAFIA QUIZ CORE SYSTEM</p>
+        </div>
+    </div>
+
+    <!-- APP CONTAINER -->
+    <div id="appContainer" class="hidden" style="width: 100%; height: 100%; flex-direction: column;">
+        
+        <!-- BIG PROMINENT HEADER -->
+        <header style="height: 60px; padding: 0 1rem;">
+            <div style="display: flex; align-items: center;">
+                
+                   <div style="background: linear-gradient(135deg, var(--primary), var(--accent)); width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.9rem; color:white; box-shadow: 0 4px 10px rgba(0,0,0,0.4); transform: rotate(-3deg); margin-right: 12px;">
+                      <span style="transform: rotate(3deg);">MQ</span>
+                   </div>
+                
+                <div class="flex-col" style="gap: 0;">
+                  <span style="font-weight:900; font-size:0.9rem; line-height:1; letter-spacing: -0.5px; color: white; white-space: nowrap;">MAFIA QUIZ</span>
+                  <span style="font-size: 0.55rem; color: var(--accent); font-weight: 800; letter-spacing: 2px; white-space: nowrap;">CORE SYSTEM</span>
+                </div>
+            </div>
+            
+            <div style="background:rgba(0,0,0,0.5); padding:0.25rem 0.75rem; border-radius:8px; border:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);">
+                <span id="timerDisplay" style="font-family:monospace; font-weight:900; font-size:0.9rem; color:var(--warning); letter-spacing: 1px;">00:00:00</span>
+            </div>
+
+            <button onclick="toggleMap()" style="background:rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color:var(--text-muted); padding:0.4rem; border-radius: 10px; position:relative; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
+                <span id="answeredCount" style="position:absolute; top:-4px; right:-4px; background:var(--success); color:black; font-size:9px; font-weight:900; width:16px; height:16px; border-radius:5px; display:flex; align-items:center; justify-content:center; border: 2px solid var(--bg-dark);">0</span>
+            </button>
+        </header>
+
+        <div id="mapModal" class="modal-overlay hidden" style="z-index: 45;">
+            <div class="glass modal-content" style="max-width: 340px; padding: 2rem;">
+                <div class="flex justify-between align-center mb-6">
+                    <h3 style="font-weight:900; font-size: 1.3rem; letter-spacing: -1px; color: white;">NAVIGASI SOAL</h3>
+                    <button onclick="toggleMap()" style="background:rgba(239,68,68,0.1); border: 1px solid var(--danger); color:var(--danger); width:32px; height:32px; border-radius: 8px; font-weight: 900;">✕</button>
+                </div>
+                <div id="mapGrid" class="map-grid" style="gap: 0.75rem;"></div>
+                <div style="margin-top: 2rem; text-align: center; font-size: 0.65rem; color: var(--text-muted); font-weight: 900; letter-spacing: 3px; opacity: 0.5;">MAFIA QUIZ NAVCORE</div>
+            </div>
+        </div>
+
+        <main style="padding: 1.5rem 1rem;">
+            <div class="card-container">
+                <div style="height:6px; background:rgba(255,255,255,0.05); border-radius:3px; margin-bottom:1.5rem; width:100%; position: relative; overflow: hidden;">
+                    <div id="progressBar" style="height:100%; background: linear-gradient(to right, var(--primary), var(--accent)); width:0%; border-radius:3px; transition:width 0.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px var(--primary);"></div>
+                </div>
+
+                <div id="questionCard" class="glass" style="padding: 2rem; border-radius: 1.5rem;">
+                    <div class="flex justify-between align-center mb-6">
+                        <span id="qTypeBadge" class="badge badge-pg" style="padding: 0.4rem 1rem; font-size: 0.75rem;">PG</span>
+                        <div style="text-align: right;">
+                           <span id="qNumber" style="font-family:monospace; color:var(--text-muted); font-size:0.9rem; font-weight: 900; background: rgba(0,0,0,0.2); padding: 0.2rem 0.6rem; border-radius: 6px;">1 / 50</span>
+                        </div>
+                    </div>
+
+                    <h2 id="qText" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 2rem; color: white;" dir="auto">...</h2>
+                    <div id="qContent" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
+
+                    <div id="feedbackContainer" class="hidden" style="margin-top:2rem; padding:1.25rem; border-radius:1rem; background:rgba(15,23,42,0.8); border-left:6px solid var(--warning); font-size:0.9rem; line-height:1.6; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        <b style="display:block; margin-bottom:0.5rem; color: var(--warning); font-weight: 900; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px;">🔑 PEMBAHASAN:</b>
+                        <span id="feedbackText" style="color: #cbd5e1;" dir="auto"></span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer style="padding: 0.75rem;">
+            <div class="card-container">
+                <div class="flex justify-between gap-3" style="margin-bottom: 0.75rem;">
+                    <button id="btnPrev" onclick="prevQ()" class="btn btn-nav" style="flex:1; padding: 0.75rem; border-radius: 10px; font-weight: 800; font-size: 0.85rem;" disabled>KEMBALI</button>
+                    <button id="btnNext" onclick="nextQ()" class="btn btn-primary" style="flex:2; padding: 0.75rem; border-radius: 10px; font-weight: 900; font-size: 0.9rem; letter-spacing: 1px;">LANJUT</button>
+                    <button id="btnFinish" onclick="finishQuiz()" class="btn btn-finish hidden" style="flex:2; padding: 0.75rem; border-radius: 10px; font-weight: 900; font-size: 0.9rem; letter-spacing: 1px;">SELESAI</button>
+                </div>
+                
+                <a href="https://wa.me/6285643573687?text=Halo%20Admin%20Mafia%20Quiz%2C%20saya%20tertarik%20membuat%20aplikasi%20kuis%20untuk%20materi%20lain." class="wa-banner" target="_blank" rel="noopener noreferrer" style="padding: 0.6rem 0.75rem; border-radius: 0.75rem; background: linear-gradient(135deg, #064e3b, #065f46); border: 1px solid #059669; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    <div style="display: flex; align-items: center;">
+                        <div style="background: #22c55e; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.2); margin-right: 12px;">
+                           <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M16.75 13.96c.25.13.36.25.36.43 0 .12-.05.22-.11.25-.21.28-1.05.65-1.39.75-.41.11-.79.17-1.14.17-.62 0-1.29-.18-1.92-.51-.43-.22-1.03-.66-1.74-1.25-1.04-.88-1.83-1.86-2.29-2.84-.15-.32-.23-.65-.23-.96 0-.41.17-.77.51-1.11.16-.15.35-.24.51-.24.16 0 .32.06.45.2.16.17.55 1.13.6 1.25.06.15.09.28.09.4 0 .15-.06.28-.18.42l-.28.3c-.09.11-.19.24-.09.43.32.55.9 1.28 1.68 1.98.66.59 1.34.98 1.86 1.17.16.06.32.08.46.08.28 0 .58-.15.78-.39l.34-.42c.15-.17.32-.23.5-.17zM12.05 2.05C6.58 2.05 2.13 6.5 2.13 11.97c0 1.76.46 3.4 1.26 4.83l-1.33 4.86 4.98-1.3c1.39.76 2.97 1.18 4.61 1.18 5.47 0 9.92-4.45 9.92-9.92 0-5.47-4.45-9.92-9.52-9.57z"/></svg>
+                        </div>
+                        <div class="flex-col" style="line-height: 1.1;">
+                            <span style="font-size:0.55rem; color:#86efac; font-weight:900; letter-spacing: 1.5px; text-transform: uppercase; white-space: nowrap;">REQUEST MATERI LAIN?</span>
+                            <span style="font-size:0.85rem; font-weight:800; color: white; white-space: nowrap;">Hubungi Admin Mafia Quiz</span>
+                        </div>
+                    </div>
+                </a>
+                <div style="text-align: center; margin-top: 0.75rem; font-size: 0.55rem; font-weight: 900; color: var(--accent); letter-spacing: 5px; opacity: 0.4;">MAFIA QUIZ PREMIUM INTERACTIVE ASSET</div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- RESULT MODAL -->
+    <div id="resultModal" class="modal-overlay hidden">
+        <div class="glass modal-content" style="padding: 2.5rem 2rem;">
+            <div style="text-align: center; margin-bottom: 1rem;">
+               
+                   <span style="background: var(--accent); color: black; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; letter-spacing: 2.5px;">MAFIA QUIZ</span>
+               
+            </div>
+            <h2 style="font-size:1.75rem; text-align:center; margin-bottom:0.25rem; font-weight: 900; color: white; letter-spacing: -0.5px;">HASIL EVALUASI</h2>
+            <p style="text-align:center; color:var(--text-muted); font-size:0.9rem; margin-bottom:2rem; font-weight: 600;">SMP</p>
+            
+            <div class="flex gap-3 mb-6">
+                <div style="flex:1.2; background:rgba(15,23,42,0.8); padding:1.5rem 1rem; border-radius:1rem; text-align:center; border: 2px solid var(--primary); box-shadow: 0 8px 20px rgba(0,0,0,0.4);">
+                    <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight: 900; letter-spacing: 1.5px; margin-bottom: 0.25rem;">SKOR AKHIR</div>
+                    <div id="finalScore" style="font-size:3rem; font-weight:900; color:var(--primary); line-height: 1; text-shadow: 0 0 15px var(--primary);">0</div>
+                </div>
+                <div style="flex:1; background:rgba(15,23,42,0.8); padding:1.5rem 1rem; border-radius:1rem; text-align:center; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; justify-content: center;">
+                    <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight: 900; letter-spacing: 1.5px; margin-bottom: 0.25rem;">STATUS</div>
+                    <div id="finalPred" style="font-size:1rem; font-weight:900; color:white; line-height: 1.2;">-</div>
+                </div>
+            </div>
+
+            <div style="font-size:0.9rem; margin-bottom:2rem; background: rgba(0,0,0,0.3); padding: 1.25rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05); box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);">
+                <div class="flex justify-between py-2" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <span style="color:var(--text-muted); font-weight: 700;">Jawaban Benar</span> <b id="resCorrect" style="color:var(--success); font-size: 1.1rem;">0</b>
+                </div>
+                <div class="flex justify-between py-2" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <span style="color:var(--text-muted); font-weight: 700;">Jawaban Salah</span> <b id="resWrong" style="color:var(--danger); font-size: 1.1rem;">0</b>
+                </div>
+                <div class="flex justify-between py-2">
+                    <span style="color:var(--text-muted); font-weight: 700;">Poin Esai</span> <b id="resEssay" style="color:#60a5fa; font-size: 1.1rem;">0</b>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="location.reload()" class="btn btn-nav" style="flex:1; font-weight: 900; padding: 1rem; border-radius: 12px;">COBA LAGI</button>
+                <button id="btnShareApp" class="btn btn-primary" style="flex:1.5; font-weight: 900; gap: 10px; padding: 1rem; border-radius: 12px; font-size: 1rem;">
+                   BAGIKAN HASIL <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                </button>
+            </div>
+            
+            <a href="https://wa.me/6285643573687?text=Halo%20Mafia%20Quiz%2C%20saya%20baru%20saja%20menyelesaikan%20kuis%20%22Try%20Out%20KMNR%22%20dan%20ingin%20memesan%20kuis%20serupa." target="_blank" rel="noopener noreferrer" class="btn btn-success" style="width:100%; margin-top: 15px; font-size: 0.95rem; border: 1px solid #4ade80; font-weight: 900; padding: 1rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                PESAN KUIS SERUPA @ MAFIA QUIZ
+            </a>
+            <div style="margin-top: 2rem; text-align: center; font-size: 0.65rem; color: var(--text-muted); font-weight: 800; letter-spacing: 2px; opacity: 0.4;">
+              &copy; 2026 MAFIA QUIZ - PREMIUM INTERACTIVE ASSET
+            </div>
+        </div>
+    </div>
+    
+    
+    <script>
+        
+    const quizData = [{"id":1,"type":"pg","question":"Hitunglah hasil dari perkalian berikut:<br><br>(1 - 1/2) × (1 - 1/3) × ... × (1 - 1/50)<br><br>Berapakah nilai akhirnya?","options":{"A":"1/25","B":"1/50","C":"49/50","D":"1/100"},"answer":"B","explanation":"Ini adalah perkalian teleskopik. Polanya: (1/2) × (2/3) × ... × (49/50). Angka pembilang dan penyebut saling mencoret. Tersisa pembilang pertama (1) dan penyebut terakhir (50)."},{"id":2,"type":"pg","question":"Digit satuan (angka terakhir) dari <b>2<sup>2026</sup></b> adalah...","options":{"A":"2","B":"4","C":"8","D":"6"},"answer":"B","explanation":"Pola angka satuan 2<sup>n</sup> adalah: 2, 4, 8, 6 (berulang 4 kali). 2026 ÷ 4 bersisa 2. Maka angka satuannya sama dengan urutan ke-2, yaitu 4."},{"id":3,"type":"pg","question":"<b>(Diagram: Persegi ABCD. Titik E berada di dalam persegi secara acak)</b><br>Jika luas persegi ABCD adalah 100 cm², berapakah jumlah luas segitiga ABE + luas segitiga CDE?","options":{"A":"25 cm²","B":"50 cm²","C":"75 cm²","D":"Tidak tentu"},"answer":"B","explanation":"Jumlah tinggi kedua segitiga sama dengan sisi persegi. Luas total = 1/2 × alas × (tinggi1 + tinggi2) = 1/2 × sisi × sisi = 1/2 Luas Persegi."},{"id":4,"type":"pg","question":"Berapa banyak bilangan prima yang terletak antara angka 10 dan 30?","options":{"A":"5","B":"6","C":"7","D":"8"},"answer":"B","explanation":"Bilangan prima tersebut adalah: 11, 13, 17, 19, 23, 29. Ada 6 bilangan."},{"id":5,"type":"pg","question":"Jika <b>3x + 2y = 20</b> di mana x dan y adalah bilangan asli. Berapa banyak pasangan (x, y) yang memenuhi?","options":{"A":"2","B":"3","C":"4","D":"5"},"answer":"B","explanation":"Persamaan diubah: 2y = 20 - 3x. Agar y bulat, (20-3x) harus genap, maka 3x harus genap, jadi x harus genap. Coba x=2 (y=7), x=4 (y=4), x=6 (y=1). Ada 3 pasangan."},{"id":6,"type":"pg","question":"Rata-rata nilai 4 siswa adalah 80. Jika nilai Ani digabungkan, rata-rata menjadi 82. Berapakah nilai Ani?","options":{"A":"86","B":"88","C":"90","D":"92"},"answer":"C","explanation":"Total nilai awal = 4 × 80 = 320. Total nilai baru = 5 × 82 = 410. Nilai Ani = 410 - 320 = 90."},{"id":7,"type":"pg","question":"Sudut terkecil yang dibentuk oleh jarum jam pada pukul 03.30 adalah...","options":{"A":"75 derajat","B":"90 derajat","C":"105 derajat","D":"120 derajat"},"answer":"A","explanation":"Jarum panjang di angka 6. Jarum pendek di tengah 3 dan 4 (posisi 3,5). Jarak = 6 - 3,5 = 2,5 langkah. 1 langkah = 30 derajat. 2,5 × 30 = 75 derajat."},{"id":8,"type":"pg","question":"Sebuah baju didiskon 20%, kemudian didiskon lagi 10% dari harga setelah diskon pertama. Berapa total diskon sebenarnya?","options":{"A":"30%","B":"28%","C":"25%","D":"18%"},"answer":"B","explanation":"Misal harga 100. Diskon 20% jadi 80. Diskon 10% dari 80 adalah 8. Harga akhir 72. Total potongan 100 - 72 = 28%."},{"id":9,"type":"pg","question":"Berapakah hasil penjumlahan 100 bilangan asli pertama (1 + 2 + 3 + ... + 100)?","options":{"A":"5000","B":"5050","C":"5100","D":"5150"},"answer":"B","explanation":"Rumus jumlah n bilangan: n(n+1)/2. Hitungan: 100 × 101 ÷ 2 = 5050."},{"id":10,"type":"pg","question":"Sebuah kubus besar 3x3x3 dicat seluruh luarnya. Berapa banyak kubus satuan kecil yang terkena cat?","options":{"A":"19","B":"26","C":"27","D":"20"},"answer":"B","explanation":"Total kubus = 27. Kubus yang ada di inti (tengah-tengah dalam) tidak kena cat. Inti kubus 3x3x3 adalah 1 kubus (1x1x1). Jadi yang kena cat = 27 - 1 = 26."},{"id":11,"type":"pg","question":"Nilai dari √(20 + √(20 + √(20 + ...))) adalah...","options":{"A":"4","B":"5","C":"10","D":"20"},"answer":"B","explanation":"Misalkan x = √(20 + x). Kuadratkan kedua sisi: x² = 20 + x. x² - x - 20 = 0. Faktorkan: (x-5)(x+4)=0. Ambil nilai positif, x = 5."},{"id":12,"type":"pg","question":"Perbandingan kelereng A:B = 2:3 dan B:C = 4:5. Berapakah perbandingan A:C?","options":{"A":"8 : 15","B":"6 : 15","C":"2 : 5","D":"8 : 9"},"answer":"A","explanation":"Samakan nilai B (KPK 3 dan 4 adalah 12). A:B = 8:12. B:C = 12:15. Maka A:B:C = 8:12:15. Jadi A:C = 8:15."},{"id":13,"type":"pg","question":"<img src='https://images.unsplash.com/photo-1594903366300-8480579e0f2d?w=300' style='width:100%;max-width:300px;border-radius:8px;'><br>Sebuah kolam berbentuk lingkaran memiliki diameter 14 meter. Berapakah luas kolam tersebut?","options":{"A":"154 m²","B":"616 m²","C":"44 m²","D":"88 m²"},"answer":"A","explanation":"Jari-jari (r) = 7. Luas = 22/7 × 7 × 7 = 154 m²."},{"id":14,"type":"pg","question":"Ayah berangkat pukul 07.00 dengan kecepatan 40 km/jam. Budi menyusul pukul 07.30 dengan kecepatan 60 km/jam. Pukul berapa Budi menyusul Ayah?","options":{"A":"08.00","B":"08.30","C":"09.00","D":"08.45"},"answer":"B","explanation":"Selisih waktu 30 menit (0,5 jam). Selisih jarak = 0,5 × 40 = 20 km. Waktu susul = Jarak / Beda Kecepatan = 20 / (60-40) = 1 jam. Budi berangkat 07.30 + 1 jam = 08.30."},{"id":15,"type":"pg","question":"FPB dari bilangan 72 dan 96 adalah...","options":{"A":"12","B":"18","C":"24","D":"36"},"answer":"C","explanation":"72 = 24 × 3. 96 = 24 × 4. FPB terbesarnya adalah 24."},{"id":16,"type":"pg","question":"Perhatikan pola bilangan segitiga: 1, 3, 6, 10, 15, ... Berapakah suku ke-10?","options":{"A":"45","B":"55","C":"66","D":"50"},"answer":"B","explanation":"Rumus bilangan segitiga: n(n+1)/2. Untuk suku ke-10: 10 × 11 ÷ 2 = 55."},{"id":17,"type":"pg","question":"Berapa banyak diagonal yang dimiliki oleh segi-8 (oktagon)?","options":{"A":"10","B":"15","C":"20","D":"25"},"answer":"C","explanation":"Rumus jumlah diagonal segi-n adalah n(n-3)/2. Untuk segi-8: 8(8-3)/2 = 8×5/2 = 20."},{"id":18,"type":"pg","question":"Berapa peluang muncul jumlah mata dadu 7 pada pelemparan dua dadu secara bersamaan?","options":{"A":"1/6","B":"1/12","C":"1/9","D":"5/36"},"answer":"A","explanation":"Pasangan berjumlah 7: (1,6), (2,5), (3,4), (4,3), (5,2), (6,1). Ada 6 kejadian. Total kemungkinan 36. Peluang = 6/36 = 1/6."},{"id":19,"type":"pg","question":"Jika <b>x + 1/x = 3</b>, maka nilai dari <b>x² + 1/x²</b> adalah...","options":{"A":"7","B":"9","C":"6","D":"11"},"answer":"A","explanation":"Kuadratkan kedua sisi: (x + 1/x)² = 3². x² + 2 + 1/x² = 9. Maka x² + 1/x² = 9 - 2 = 7."},{"id":20,"type":"pg","question":"Sebuah deret angka berulang: 123123123... Angka apakah yang menempati urutan ke-100?","options":{"A":"1","B":"2","C":"3","D":"0"},"answer":"A","explanation":"Pola berulang setiap 3 angka (1, 2, 3). 100 ÷ 3 = 33 sisa 1. Karena sisa 1, maka angkanya sama dengan urutan ke-1, yaitu 1."},{"id":21,"type":"pg","question":"Selembar kertas memiliki ketebalan 0,1 mm. Jika kertas tersebut bisa dilipat sebanyak 10 kali, berapakah ketebalan akhirnya?","options":{"A":"1 cm","B":"10,24 cm","C":"5 cm","D":"1 mm"},"answer":"B","explanation":"Setiap lipatan menebal 2x lipat. 0,1 mm × 2<sup>10</sup> = 0,1 × 1024 = 102,4 mm = 10,24 cm."},{"id":22,"type":"pg","question":"Berapakah jumlah total sudut dalam pada bangun segi-5 (pentagon)?","options":{"A":"360°","B":"540°","C":"720°","D":"900°"},"answer":"B","explanation":"Rumus jumlah sudut: (n-2) × 180°. Untuk segi-5: (5-2) × 180° = 3 × 180° = 540°."},{"id":23,"type":"pg","question":"Lantai seluas 3 x 3 meter akan dipasangi ubin berukuran 30 x 30 cm. Berapa banyak ubin yang dibutuhkan?","options":{"A":"10","B":"90","C":"100","D":"900"},"answer":"C","explanation":"Luas lantai = 300 cm × 300 cm = 90.000 cm². Luas ubin = 30 × 30 = 900 cm². Jumlah ubin = 90.000 ÷ 900 = 100 buah."},{"id":24,"type":"pg","question":"Dua buah sudut A dan B saling berpelurus (jumlahnya 180°). Jika Sudut A = 2x dan Sudut B = 3x + 10, berapakah nilai x?","options":{"A":"34","B":"30","C":"40","D":"36"},"answer":"A","explanation":"2x + (3x + 10) = 180. 5x + 10 = 180. 5x = 170. x = 34."},{"id":25,"type":"pg","question":"Berapa banyak bilangan palindrom (dibaca sama dari depan dan belakang) yang terdiri dari 3 digit? (Contoh: 121, 353)","options":{"A":"80","B":"90","C":"100","D":"81"},"answer":"B","explanation":"Bentuknya ABA. Digit pertama (A) tidak boleh 0 (ada 9 pilihan: 1-9). Digit kedua (B) boleh 0-9 (ada 10 pilihan). Digit ketiga harus sama dengan A (1 pilihan). Total = 9 × 10 × 1 = 90."},{"id":26,"type":"pg","question":"Harga 2 pensil + 3 buku = Rp 12.000. Harga 3 pensil + 1 buku = Rp 7.500. Berapakah harga 1 buku?","options":{"A":"Rp 2.000","B":"Rp 2.500","C":"Rp 3.000","D":"Rp 3.500"},"answer":"C","explanation":"Dengan eliminasi SPLDV, didapatkan harga Pensil = 1.500 dan Buku = 3.000."},{"id":27,"type":"pg","question":"Hitunglah hasil dari: √625 + √144","options":{"A":"37","B":"47","C":"29","D":"39"},"answer":"A","explanation":"√625 = 25. √144 = 12. 25 + 12 = 37."},{"id":28,"type":"pg","question":"Berapakah sisa pembagian bilangan 2025 jika dibagi dengan 9?","options":{"A":"0","B":"1","C":"4","D":"5"},"answer":"A","explanation":"Ciri bilangan habis dibagi 9 adalah jumlah digitnya kelipatan 9. 2+0+2+5 = 9. Karena jumlah digitnya 9, maka bilangan itu habis dibagi 9 (Sisa 0)."},{"id":29,"type":"pg","question":"Sebuah segitiga siku-siku memiliki panjang sisi tegak 6 cm dan 8 cm. Berapakah panjang sisi miringnya?","options":{"A":"10 cm","B":"12 cm","C":"14 cm","D":"100 cm"},"answer":"A","explanation":"Menggunakan Triple Pythagoras: 6, 8, 10 (kelipatan dari 3, 4, 5)."},{"id":30,"type":"pg","question":"Sebuah gedung setinggi 24m memiliki bayangan 18m. Pada saat yang sama, sebuah pohon memiliki bayangan 12m. Berapakah tinggi pohon tersebut?","options":{"A":"14m","B":"15m","C":"16m","D":"18m"},"answer":"C","explanation":"Gunakan perbandingan kesebangunan. Tinggi Gedung / Bayangan Gedung = Tinggi Pohon / Bayangan Pohon. 24/18 = T/12. T = (24/18) × 12 = (4/3) × 12 = 16 m."},{"id":31,"type":"pg","question":"Jika <b>2<sup>x</sup> = 1/64</b>, berapakah nilai x?","options":{"A":"-6","B":"-5","C":"6","D":"5"},"answer":"A","explanation":"64 adalah 2<sup>6</sup>. Maka 1/64 adalah 1 / 2<sup>6</sup> atau 2<sup>-6</sup>. Jadi x = -6."},{"id":32,"type":"pg","question":"Himpunan A = {1, 2} dan Himpunan B = {a, b, c}. Berapa banyak pemetaan yang mungkin dari A ke B?","options":{"A":"8","B":"9","C":"6","D":"5"},"answer":"B","explanation":"Rumus pemetaan A ke B adalah n(B) dipangkatkan n(A). 3<sup>2</sup> = 9."},{"id":33,"type":"pg","question":"Rumus suku ke-n suatu barisan adalah <b>Un = n² - 1</b>. Berapakah nilai suku ke-5?","options":{"A":"20","B":"24","C":"25","D":"26"},"answer":"B","explanation":"U5 = 5² - 1 = 25 - 1 = 24."},{"id":34,"type":"pg","question":"Sebuah balok memiliki panjang 10 cm, lebar 5 cm, dan tinggi 4 cm. Berapakah volumenya?","options":{"A":"200 cm³","B":"100 cm³","C":"150 cm³","D":"250 cm³"},"answer":"A","explanation":"Volume = p × l × t = 10 × 5 × 4 = 200 cm³."},{"id":35,"type":"pg","question":"Tentukan median dari data berikut: 4, 7, 5, 8, 9, 5.","options":{"A":"5","B":"6","C":"6.5","D":"7"},"answer":"B","explanation":"Urutkan data: 4, 5, 5, 7, 8, 9. Data genap, median ada di tengah antara 5 dan 7. (5+7) ÷ 2 = 6."},{"id":36,"type":"pg","question":"Dari kata 'MATEMATIKA', berapa peluang terambilnya huruf A jika diambil satu huruf secara acak?","options":{"A":"3/10","B":"4/10","C":"2/10","D":"5/10"},"answer":"A","explanation":"Total huruf = 10. Huruf A muncul 3 kali. Peluang = 3/10."},{"id":37,"type":"pg","question":"Jika 3 ekor kucing dapat menangkap 3 ekor tikus dalam waktu 3 menit. Berapa waktu yang dibutuhkan 100 ekor kucing untuk menangkap 100 ekor tikus?","options":{"A":"100 menit","B":"3 menit","C":"1 menit","D":"300 menit"},"answer":"B","explanation":"Ini soal logika. 3 kucing = 3 tikus = 3 menit, artinya 1 kucing butuh 3 menit untuk menangkap 1 tikus. Jika ada 100 kucing bekerja paralel menangkap 100 tikus masing-masing, waktunya tetap 3 menit."},{"id":38,"type":"pg","question":"Sebuah lingkaran memiliki luas 616 cm². Berapakah kelilingnya? (Gunakan π = 22/7)","options":{"A":"88 cm","B":"44 cm","C":"66 cm","D":"132 cm"},"answer":"A","explanation":"Luas = πr². 616 = 22/7 × r². r² = 196, maka r = 14. Keliling = 2πr = 2 × 22/7 × 14 = 88 cm."},{"id":39,"type":"pg","question":"Berapakah hasil dari 50% dari 50?","options":{"A":"10","B":"25","C":"50","D":"100"},"answer":"B","explanation":"50% sama dengan setengah. Setengah dari 50 adalah 25."},{"id":40,"type":"pg","question":"Dalam kelas, 20 siswa suka Basket, 15 suka Voli, dan 5 suka keduanya. Jika semua siswa suka setidaknya satu olahraga, berapa jumlah siswa dalam kelas?","options":{"A":"30","B":"35","C":"40","D":"25"},"answer":"A","explanation":"Rumus himpunan gabungan: n(A∪B) = n(A) + n(B) - n(A∩B) = 20 + 15 - 5 = 30 siswa."},{"id":41,"type":"pg","question":"Tentukan nilai x yang memenuhi persamaan <b>3<sup>2x-1</sup> = 27</b>.","options":{"A":"1","B":"2","C":"3","D":"4"},"answer":"B","explanation":"Ubah 27 menjadi 3<sup>3</sup>. Maka 3<sup>2x-1</sup> = 3<sup>3</sup>. Pangkatnya disamakan: 2x - 1 = 3 -> 2x = 4 -> x = 2."},{"id":42,"type":"pg","question":"Bangun ruang sisi lengkung manakah yang hanya memiliki 1 titik puncak dan alas berbentuk lingkaran?","options":{"A":"Tabung","B":"Kerucut","C":"Bola","D":"Prisma"},"answer":"B","explanation":"Ciri tersebut adalah milik Kerucut."},{"id":43,"type":"pg","question":"Ani sedang mengantre tiket. Ia berada di urutan ke-10 dari depan dan urutan ke-10 dari belakang. Berapa jumlah orang dalam antrean tersebut?","options":{"A":"20","B":"19","C":"21","D":"18"},"answer":"B","explanation":"Jumlah = (Urutan Depan + Urutan Belakang) - 1 (karena Ani dihitung dua kali). 10 + 10 - 1 = 19 orang."},{"id":44,"type":"pg","question":"Berapa banyak bilangan genap yang terletak antara 1 dan 51?","options":{"A":"25","B":"26","C":"24","D":"20"},"answer":"A","explanation":"Bilangan genap: 2, 4, 6, ..., 50. Rumus jumlah suku: (50 - 2)/2 + 1 = 24 + 1 = 25 bilangan."},{"id":45,"type":"pg","question":"Selisih kuadrat dua bilangan adalah 20. Jika jumlah kedua bilangan itu adalah 10, berapakah selisih kedua bilangan tersebut?","options":{"A":"2","B":"4","C":"5","D":"10"},"answer":"A","explanation":"Rumus: a² - b² = (a+b)(a-b). Diketahui a²-b²=20 dan a+b=10. Maka 20 = 10 × (a-b). Jadi selisih (a-b) = 20 ÷ 10 = 2."},{"id":46,"type":"pg","question":"Jarak dua kota di peta adalah 5 cm. Jika skala peta 1 : 1.000.000, berapakah jarak sebenarnya?","options":{"A":"5 km","B":"50 km","C":"500 km","D":"5.000 km"},"answer":"B","explanation":"Jarak sebenarnya = 5 cm × 1.000.000 = 5.000.000 cm. Ubah ke km (hilangkan 5 nol) = 50 km."},{"id":47,"type":"pg","question":"Berapakah gradien (kemiringan) dari garis dengan persamaan <b>2y = 4x - 6</b>?","options":{"A":"4","B":"2","C":"-2","D":"1/2"},"answer":"B","explanation":"Ubah ke bentuk y = mx + c. Bagi persamaan dengan 2: y = 2x - 3. Koefisien x adalah gradien, jadi m = 2."},{"id":48,"type":"pg","question":"Hasil dari operasi: -5 - (-8) + 10 adalah...","options":{"A":"13","B":"3","C":"-3","D":"7"},"answer":"A","explanation":"-5 + 8 + 10 = 3 + 10 = 13."},{"id":49,"type":"pg","question":"<div style='background:#f0f0f0;padding:10px;'>Pola Huruf:<br>A, C, E, G, ...</div>Huruf apakah selanjutnya?","options":{"A":"H","B":"I","C":"J","D":"K"},"answer":"B","explanation":"Pola melompat 1 huruf. A (b) C (d) E (f) G (h) I."},{"id":50,"type":"pg","question":"Berapakah bilangan bulat positif terkecil yang habis dibagi oleh 3, 4, dan 5?","options":{"A":"30","B":"40","C":"50","D":"60"},"answer":"D","explanation":"Cari KPK dari 3, 4, dan 5. 3×4×5 = 60 (karena relatif prima sesamanya)."}];
+    let idx = 0;
+    let answers = {};
+    let time = 7200;
+    let timerInt;
+    let isShuffled = false;
+    const els = {};
+
+        
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+    
+    function showFb(txt) {
+        els.txt.fb.innerHTML = txt;
+        els.box.fb.classList.remove('hidden');
+    }
+
+    function toggleMap() {
+        els.scr.map.classList.toggle('hidden');
+        renderMap();
+    }
+
+        
+    function renderQ() {
+        const d = quizData[idx];
+        const saved = answers[d.id];
+        
+        const card = document.getElementById('questionCard');
+        if(card) {
+            card.style.animation = 'none';
+            card.offsetHeight;
+            card.style.animation = 'fadein 0.3s ease-out';
+        }
+
+        els.box.content.innerHTML = '';
+        els.box.fb.classList.add('hidden');
+        els.txt.qNum.innerText = (idx+1) + ' / ' + quizData.length;
+        
+        // Handle Image
+        let imgHTML = '';
+        if(d.image) {
+            imgHTML = '<div style="margin-bottom:1.5rem; border-radius:1rem; overflow:hidden; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">' +
+                      '<img src="' + d.image + '" style="width:100%; height:auto; display:block; max-height:400px; object-fit:contain; margin:0 auto;" alt="Visual Soal">' +
+                      '</div>';
+        }
+        els.txt.qText.innerHTML = imgHTML + d.question;
+        
+        const badge = document.getElementById('qTypeBadge');
+        if(d.type === 'pg') { badge.className = 'badge badge-pg'; badge.innerText = 'Pilihan Ganda'; }
+        else if(d.type === 'pg-complex') { badge.className = 'badge badge-complex'; badge.innerText = 'Pilihan Ganda Kompleks'; }
+        else if(d.type === 'match') { badge.className = 'badge badge-match'; badge.innerText = 'Menjodohkan'; }
+        else { badge.className = 'badge badge-mix'; badge.innerText = 'Uraian'; }
+
+        if(d.type === 'pg') renderPG(d, saved);
+        else if(d.type === 'pg-complex') renderPGComplex(d, saved);
+        else if(d.type === 'match') renderMatch(d, saved);
+        else renderText(d, saved);
+
+        els.btns.prev.disabled = idx === 0;
+        if(idx === quizData.length-1) {
+            els.btns.next.classList.add('hidden');
+            els.btns.fin.classList.remove('hidden');
+        } else {
+            els.btns.next.classList.remove('hidden');
+            els.btns.fin.classList.add('hidden');
+        }
+
+        els.bar.style.width = ((idx+1)/quizData.length)*100 + '%';
+        els.txt.ansCount.innerText = Object.keys(answers).length;
+        renderMap();
+    }
+
+    function renderMap() {
+        els.box.map.innerHTML = '';
+        quizData.forEach((q, i) => {
+            const b = document.createElement('button');
+            b.className = 'map-btn ' + (i===idx ? 'active ' : '') + (answers[q.id] ? 'answered' : '');
+            b.innerText = i+1;
+            b.onclick = () => { idx = i; renderQ(); els.scr.map.classList.add('hidden'); };
+            els.box.map.appendChild(b);
+        });
+    }
+
+    function renderPG(d, s) {
+        Object.entries(d.options || {}).forEach(([k,v]) => {
+            const b = document.createElement('button');
+            b.className = 'btn-option';
+            b.style.padding = '1.1rem';
+            b.style.borderRadius = '1rem';
+            let icon = '';
+            
+            if(s) {
+                if(k == d.answer) { b.classList.add('correct'); icon = '✓'; }
+                else if(s.val == k && k != d.answer) { b.classList.add('wrong'); icon = '✕'; }
+            } else {
+                b.onclick = () => { answers[d.id] = { val: k, score: k==d.answer ? 1 : 0 }; renderQ(); };
+            }
+            
+            b.innerHTML = '<b class="option-icon" style="width:24px; height:24px;">' + k + '</b> <span style="flex:1" dir="auto">' + v + '</span> <b>' + icon + '</b>';
+            els.box.content.appendChild(b);
+        });
+        if(s) showFb(d.explanation);
+    }
+
+    function renderPGComplex(d, s) {
+        let currentVal = (s && s.val) ? s.val : (answers[d.id] ? answers[d.id].val : []);
+        if(!Array.isArray(currentVal)) currentVal = [];
+
+        Object.entries(d.options || {}).forEach(([k,v]) => {
+            const b = document.createElement('button');
+            b.className = 'btn-option checkbox';
+            b.style.padding = '1.1rem';
+            b.style.borderRadius = '1rem';
+            let icon = '';
+            
+            if(s && s.score !== undefined) {
+                const isSelected = currentVal.includes(k);
+                const isCorrectKey = d.answer.includes(k);
+                if(isCorrectKey) { 
+                    b.classList.add('correct'); icon = '✓'; 
+                    if(!isSelected) b.classList.add('missed');
+                } else if (isSelected && !isCorrectKey) {
+                    b.classList.add('wrong'); icon = '✕';
+                } else if (isSelected) b.classList.add('correct');
+            } else {
+                if(currentVal.includes(k)) { b.style.borderColor = 'var(--primary)'; b.style.background = 'rgba(99, 102, 241, 0.2)'; }
+                b.onclick = () => {
+                    const newSet = currentVal.includes(k) ? currentVal.filter(x => x !== k) : [...currentVal, k];
+                    answers[d.id] = { val: newSet }; renderQ(); 
+                };
+            }
+            const boxContent = currentVal.includes(k) ? '✓' : k;
+            b.innerHTML = '<b class="option-icon" style="width:24px; height:24px; border-radius: 6px;">' + boxContent + '</b> <span style="flex:1" dir="auto">' + v + '</span> <b>' + icon + '</b>';
+            els.box.content.appendChild(b);
+        });
+
+        if(!s || s.score === undefined) {
+             const btn = document.createElement('button');
+             btn.className = 'btn btn-primary'; btn.innerText = 'KONFIRMASI JAWABAN'; btn.style.marginTop = '1rem';
+             btn.style.padding = '1rem'; btn.style.borderRadius = '1rem';
+             btn.onclick = () => {
+                 const currentVal = answers[d.id]?.val || [];
+                 if(currentVal.length === 0) return alert('Pilih minimal satu jawaban!');
+                 const sortedKey = [...d.answer].sort();
+                 const sortedUser = [...currentVal].sort();
+                 const isCorrect = JSON.stringify(sortedKey) === JSON.stringify(sortedUser);
+                 answers[d.id] = { val: currentVal, score: isCorrect ? 1 : 0 }; renderQ();
+             };
+             els.box.content.appendChild(btn);
+        } else { showFb(d.explanation); }
+    }
+
+    function renderMatch(d, s) {
+        let opts = (d.items || []).map(i => i.m);
+        if(!s) opts.sort(() => Math.random() - 0.5); 
+
+        (d.items || []).forEach((item, i) => {
+            const row = document.createElement('div'); row.className = 'match-row';
+            row.style.borderRadius = '1rem'; row.style.padding = '1rem';
+            let inner = '<div style="font-size:0.95rem; margin-bottom:0.5rem; font-weight:700;" dir="auto">' + (i+1) + '. ' + item.t + '</div>';
+            
+            if(s) {
+                const userVal = s.pairs[i]; const correct = userVal === item.m; const color = correct ? 'var(--success)' : 'var(--danger)';
+                inner += '<div style="border:1px solid ' + color + '; color:' + color + '; padding:0.75rem; border-radius:0.75rem; font-size:0.9rem; font-weight:700;">Jawaban: ' + (userVal || '-') + ' ' + (correct ? '✓' : '✕') + '</div>';
+                if(!correct) inner += '<div style="font-size:0.8rem; color:var(--success); margin-top:5px; font-weight:600;">Kunci: ' + item.m + '</div>';
+            } else {
+                inner += '<select id="match_' + i + '" style="border-radius:0.75rem; padding:0.75rem;"><option value="" disabled selected>Pilih Pasangan...</option>';
+                opts.forEach(o => inner += '<option value="' + o + '">' + o + '</option>');
+                inner += '</select>';
+            }
+            row.innerHTML = inner; els.box.content.appendChild(row);
+        });
+
+        if(!s) {
+            const btn = document.createElement('button'); btn.className = 'btn btn-primary'; btn.innerText = 'KUNCI PASANGAN'; btn.style.marginTop = '1rem';
+            btn.style.padding = '1rem'; btn.style.borderRadius = '1rem';
+            btn.onclick = () => {
+                let pairs = {}; let correctCount = 0; let filled = true;
+                (d.items || []).forEach((item, i) => {
+                    const val = document.getElementById('match_' + i).value;
+                    if(!val) filled = false; pairs[i] = val; if(val === item.m) correctCount++;
+                });
+                if(!filled) return alert('Lengkapi semua pasangan!');
+                answers[d.id] = { pairs: pairs, score: correctCount/(d.items || []).length }; renderQ();
+            };
+            els.box.content.appendChild(btn);
+        } else { showFb(d.explanation); }
+    }
+
+    function renderText(d, s) {
+        if(!s) {
+            const txt = document.createElement('textarea'); txt.id = 'essay_input_' + d.id; txt.rows = 4; txt.placeholder = 'Ketik jawaban Anda di sini...'; txt.dir = "auto";
+            txt.style.borderRadius = '1rem'; txt.style.padding = '1rem';
+            const btn = document.createElement('button'); btn.className = 'btn btn-primary'; btn.innerText = 'LIHAT KUNCI'; btn.style.marginTop = '1rem';
+            btn.style.padding = '1rem'; btn.style.borderRadius = '1rem';
+            btn.onclick = () => {
+                const t = document.getElementById('essay_input_' + d.id); if(!t.value.trim()) return alert('Tuliskan jawaban terlebih dahulu!');
+                t.disabled = true; btn.classList.add('hidden'); document.getElementById('selfEval').classList.remove('hidden');
+            };
+            els.box.content.append(txt, btn);
+
+            const evalDiv = document.createElement('div'); evalDiv.id = 'selfEval'; evalDiv.className = 'hidden';
+            let h = '<div style="background:rgba(0,0,0,0.5); padding:1.25rem; border-radius:1rem; border:2px solid var(--success); margin-top:1rem;"><b style="color:var(--success); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:0.5rem;">KUNCI JAWABAN:</b><div style="font-size:1rem; color:white; font-weight:700;" dir="auto">' + d.answer + '</div></div>';
+            h += '<div style="text-align:center; margin-top:1rem; font-size:0.8rem; font-weight:800; color:var(--text-muted); text-transform:uppercase;">Evaluasi Jawaban Anda:</div>';
+            h += '<div class="flex gap-3 mt-3">';
+            h += '<button class="btn" style="flex:1; background:rgba(239,68,68,0.15); border:1px solid var(--danger); font-size:0.8rem; border-radius:1rem; padding:0.8rem;" onclick="rate(' + d.id + ', 0)">SALAH</button>';
+            h += '<button class="btn" style="flex:1; background:rgba(245,158,11,0.15); border:1px solid var(--warning); font-size:0.8rem; border-radius:1rem; padding:0.8rem;" onclick="rate(' + d.id + ', 0.5)">MIRIP</button>';
+            h += '<button class="btn" style="flex:1; background:rgba(16,185,129,0.15); border:1px solid var(--success); font-size:0.8rem; border-radius:1rem; padding:0.8rem;" onclick="rate(' + d.id + ', 1)">BENAR</button>';
+            h += '</div>';
+            evalDiv.innerHTML = h;
+            
+            window.rate = (id, sc) => { const t = document.getElementById('essay_input_' + id); answers[id] = { ans: t ? t.value : '-', score: sc }; renderQ(); };
+            els.box.content.appendChild(evalDiv);
+        } else {
+            els.box.content.innerHTML = '<div style="background:rgba(15,23,42,0.8); padding:1rem; border-radius:1rem; margin-bottom:1rem; font-style:italic; font-size:0.95rem; border:1px solid rgba(255,255,255,0.05);" dir="auto">"' + s.ans + '"</div><div style="text-align:center; padding:0.75rem; border:2px solid ' + (s.score==1? 'var(--success)' : (s.score==0.5?'var(--warning)':'var(--danger)')) + '; border-radius:0.75rem; font-weight:900; background:rgba(0,0,0,0.2);">NILAI MANDIRI: ' + s.score + '</div><div style="margin-top:1rem; font-size:0.9rem; background:rgba(255,255,255,0.02); padding:1rem; border-radius:1rem;"><b style="color:var(--success); text-transform:uppercase; font-size:0.7rem; display:block; margin-bottom:0.25rem;">Kunci:</b> <div style="font-weight:700; color:white;" dir="auto">' + d.answer + '</div></div>';
+            showFb(d.explanation);
+        }
+    }
+
+        
+    function startQuiz() {
+        try {
+            if(els.scr.start) els.scr.start.classList.add('hidden');
+            if(els.scr.app) { els.scr.app.classList.remove('hidden'); els.scr.app.classList.add('flex'); }
+            renderQ();
+            if(time > 0) timerInt = setInterval(tick, 1000);
+        } catch(e) {
+            console.error("Error starting quiz:", e);
+            document.getElementById('startModal').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'flex';
+            renderQ();
+        }
+    }
+
+    function tick() {
+        time--;
+        const h = Math.floor(time/3600).toString().padStart(2,'0');
+        const m = Math.floor((time%3600)/60).toString().padStart(2,'0');
+        const s = (time%60).toString().padStart(2,'0');
+        if(els.txt.timer) els.txt.timer.innerText = h + ':' + m + ':' + s;
+        if(time<=0) finishQuiz();
+    }
+    
+    function nextQ() { if(idx < quizData.length-1) { idx++; renderQ(); } }
+    function prevQ() { if(idx > 0) { idx--; renderQ(); } }
+
+    function finishQuiz() {
+        clearInterval(timerInt);
+        let sc = 0; let cor = 0; let wr = 0; let oth = 0;
+        
+        quizData.forEach(q => {
+            const a = answers[q.id];
+            if(a) {
+                sc += (a.score || 0);
+                if(q.type === 'pg' || q.type === 'pg-complex') { if(a.score === 1) cor++; else wr++; } 
+                else { oth += (a.score || 0); }
+            } else if(q.type === 'pg' || q.type === 'pg-complex') wr++;
+        });
+
+        const final = Math.round((sc / quizData.length) * 100);
+        document.getElementById('finalScore').innerText = final;
+        document.getElementById('finalPred').innerText = final >= 80 ? 'Sangat Baik' : (final >= 70 ? 'Baik' : 'Cukup');
+        document.getElementById('resCorrect').innerText = cor;
+        document.getElementById('resWrong').innerText = wr;
+        document.getElementById('resEssay').innerText = oth.toFixed(1);
+
+        els.scr.app.classList.add('hidden');
+        els.scr.res.classList.remove('hidden');
+        
+        for(let i=0; i<50; i++) {
+            const c = document.createElement('div'); c.className = 'confetti';
+            c.style.left = Math.random()*100 + 'vw'; c.style.backgroundColor = ['#f00','#0f0','#00f','#ff0'][Math.floor(Math.random()*4)];
+            c.style.animationDuration = (Math.random()*2+2) + 's'; document.body.appendChild(c);
+        }
+    }
+
+    async function drawScoreCard(score, grade, correct, wrong, title) {
+        const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 400; const ctx = canvas.getContext('2d');
+        const grd = ctx.createLinearGradient(0,0, 800, 400);
+        grd.addColorStop(0, getComputedStyle(document.body).getPropertyValue('--bg-dark').trim() || '#0f172a'); grd.addColorStop(1, '#000000');
+        ctx.fillStyle = grd; ctx.fillRect(0,0, 800, 400);
+
+        ctx.beginPath(); ctx.arc(400, 140, 80, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fill();
+        ctx.lineWidth = 4; ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--primary').trim() || '#6366f1'; ctx.stroke();
+
+        ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+        ctx.font = 'bold 24px sans-serif'; ctx.fillText(title.substring(0,30) + (title.length>30?'...':''), 400, 40);
+        ctx.font = 'bold 80px sans-serif'; ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary').trim() || '#6366f1'; ctx.fillText(score, 400, 165);
+        ctx.font = 'bold 30px sans-serif'; ctx.fillStyle = '#ffffff'; ctx.fillText(grade, 400, 260);
+        ctx.font = '20px sans-serif'; ctx.fillStyle = '#94a3b8'; ctx.fillText('✅ Benar: ' + correct + '   ❌ Salah: ' + wrong, 400, 310);
+        
+        // Dynamic Branding Watermark
+        ctx.font = 'italic 16px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillText('Powered by ' + brand + ' ' + footer, 400, 350);
+        ctx.font = 'bold 12px sans-serif'; ctx.fillText('Hubungi Kami: 6285643573687', 400, 375);
+        return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    }
+
+    async function shareResult() {
+        const btn = els.btns.share; const originalText = btn.innerText; btn.innerText = 'WAIT...'; btn.disabled = true;
+        try {
+            let correct = 0; const score = document.getElementById('finalScore').innerText; const total = quizData.length; const grade = document.getElementById('finalPred').innerText;
+            Object.values(answers).forEach(a => { if(a.score === 1) correct++; });
+            
+            // Dynamic Branding prefix for sharing
+            const text = [ 
+                '🏆 *HASIL KUIS @ MAFIA QUIZ*', 
+                'Kuis: *Try Out KMNR*', 
+                '⭐ Skor: ' + score + ' (' + grade + ')', 
+                '✅ Benar: ' + correct + ' | ❌ Salah: ' + (total - correct), 
+                '', 
+                'Mau belajar dengan kuis lain? Pesan di Mafia Quiz:', 
+                'https://wa.me/6285643573687' 
+            ].join('\n');
+
+            const blob = await drawScoreCard(score, grade, correct, total-correct, 'Try Out KMNR');
+            const file = new File([blob], 'score.png', { type: 'image/png' });
+
+            // 1. Try System Share (Best for Mobile)
+            if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) { 
+                await navigator.share({ files: [file], text: text }); 
+            } 
+            // 2. Try System Share Text Only
+            else if(navigator.share) { 
+                await navigator.share({ title: 'Try Out KMNR', text: text }); 
+            } 
+            // 3. Fallback: Open WhatsApp Directly + Clipboard
+            else {
+                navigator.clipboard.writeText(text);
+                const waUrl = "https://wa.me/?text=" + encodeURIComponent(text);
+                window.open(waUrl, '_blank');
+                alert('Teks hasil telah disalin! Silakan tempel di WhatsApp.');
+            }
+        } catch(err) {
+            console.log('Share failed', err);
+            // Last resort manual open
+            const score = document.getElementById('finalScore').innerText;
+            const waUrl = "https://wa.me/?text=" + encodeURIComponent('🏆 Skor Kuis Saya: ' + score + ' @ Mafia Quiz');
+            window.open(waUrl, '_blank');
+        } finally { btn.innerText = originalText; btn.disabled = false; }
+    }
+
+        
+    function init() {
+        els.scr = { start: document.getElementById('startModal'), app: document.getElementById('appContainer'), res: document.getElementById('resultModal'), map: document.getElementById('mapModal') };
+        els.txt = { qNum: document.getElementById('qNumber'), qText: document.getElementById('qText'), timer: document.getElementById('timerDisplay'), ansCount: document.getElementById('answeredCount'), fb: document.getElementById('feedbackText') };
+        els.box = { content: document.getElementById('qContent'), fb: document.getElementById('feedbackContainer'), map: document.getElementById('mapGrid') };
+        els.bar = document.getElementById('progressBar');
+        els.btns = { prev: document.getElementById('btnPrev'), next: document.getElementById('btnNext'), fin: document.getElementById('btnFinish'), start: document.getElementById('btnStartQuiz'), share: document.getElementById('btnShareApp') };
+
+        if(els.btns.start) { els.btns.start.onclick = startQuiz; } 
+        else { const btn = document.querySelector('button[onclick="startQuiz()"]'); if(btn) btn.onclick = startQuiz; }
+
+        if(els.btns.share) els.btns.share.onclick = shareResult;
+        if(isShuffled) shuffleArray(quizData);
+    }
+    window.onload = init;
+
+    </script>
+
+</body>
+</html>
